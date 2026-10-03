@@ -24,17 +24,19 @@ INSTALL=false
 FAST=false
 LINUX_CROSS=false
 CLEAN=false
+TARGET_VERSION="${APP_VERSION:-${VERSION:-}}"
 
 # Print help message
 show_help() {
   echo -e "${BOLD}Usage:${RESET} ./build.sh [options]"
   echo ""
   echo -e "${BOLD}Options:${RESET}"
-  echo -e "  -h, --help       Show this help message"
-  echo -e "  -i, --install    Install the compiled executable to ~/.local/bin or /usr/local/bin"
-  echo -e "  -f, --fast       Fast build: skip format check, analyze, and tests"
-  echo -e "  -l, --linux      Also cross-compile for Linux (x64 & arm64)"
-  echo -e "  -c, --clean      Clean previous build artifacts before building"
+  echo -e "  -h, --help             Show this help message"
+  echo -e "  -v, --version <ver>    Specify version to embed into binary (e.g. 1.2.0)"
+  echo -e "  -i, --install          Install the compiled executable to ~/.local/bin or /usr/local/bin"
+  echo -e "  -f, --fast             Fast build: skip format check, analyze, and tests"
+  echo -e "  -l, --linux            Also cross-compile for Linux (x64 & arm64)"
+  echo -e "  -c, --clean            Clean previous build artifacts before building"
 }
 
 # Parse flags
@@ -43,6 +45,15 @@ while [[ $# -gt 0 ]]; do
     -h|--help)
       show_help
       exit 0
+      ;;
+    -v|--version)
+      if [[ -n "$2" && "$2" != -* ]]; then
+        TARGET_VERSION="$2"
+        shift 2
+      else
+        echo -e "${RED}Error: --version requires a version string.${RESET}"
+        exit 1
+      fi
       ;;
     -i|--install)
       INSTALL=true
@@ -70,7 +81,18 @@ done
 
 cd "$ROOT_DIR"
 
-echo -e "${BOLD}${CYAN}=== Building $APP_NAME ===${RESET}"
+# Auto-detect version if not explicitly provided
+if [ -z "$TARGET_VERSION" ]; then
+  if git describe --tags --exact-match &>/dev/null; then
+    TARGET_VERSION="$(git describe --tags --exact-match | sed 's/^v//')"
+  elif [ -f "pubspec.yaml" ]; then
+    TARGET_VERSION="$(grep '^version:' pubspec.yaml | awk '{print $2}' | tr -d ' ')"
+  fi
+fi
+
+TARGET_VERSION="${TARGET_VERSION:-1.0.0}"
+
+echo -e "${BOLD}${CYAN}=== Building $APP_NAME (version: $TARGET_VERSION) ===${RESET}"
 
 # Step 0: Clean if requested
 if [ "$CLEAN" = true ]; then
@@ -113,7 +135,7 @@ fi
 # Step 3: Compile for Host OS
 HOST_TARGET="$BUILD_DIR/$APP_NAME"
 echo -e "\n${CYAN}🔨 Compiling native executable for current host...${RESET}"
-dart compile exe "$ENTRY_POINT" -o "$HOST_TARGET"
+dart compile exe -DAPP_VERSION="$TARGET_VERSION" "$ENTRY_POINT" -o "$HOST_TARGET"
 chmod +x "$HOST_TARGET"
 
 # Display size
@@ -126,12 +148,12 @@ if [ "$LINUX_CROSS" = true ]; then
   
   LINUX_X64="$BUILD_DIR/${APP_NAME}-linux-x64"
   echo -e "  Compiling Linux x64: $LINUX_X64"
-  dart compile exe --target-os=linux --target-arch=x64 "$ENTRY_POINT" -o "$LINUX_X64"
+  dart compile exe --target-os=linux --target-arch=x64 -DAPP_VERSION="$TARGET_VERSION" "$ENTRY_POINT" -o "$LINUX_X64"
   chmod +x "$LINUX_X64"
 
   LINUX_ARM64="$BUILD_DIR/${APP_NAME}-linux-arm64"
   echo -e "  Compiling Linux arm64: $LINUX_ARM64"
-  dart compile exe --target-os=linux --target-arch=arm64 "$ENTRY_POINT" -o "$LINUX_ARM64"
+  dart compile exe --target-os=linux --target-arch=arm64 -DAPP_VERSION="$TARGET_VERSION" "$ENTRY_POINT" -o "$LINUX_ARM64"
   chmod +x "$LINUX_ARM64"
 
   echo -e "${GREEN}✓ Linux cross-compilation complete!${RESET}"

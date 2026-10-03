@@ -33,6 +33,9 @@
 # 执行完整构建（代码格式校验、静态分析、单元测试、编译为原生二进制）
 ./build.sh
 
+# 编译并指定版本号
+./build.sh -v 1.2.0
+
 # 编译并直接安装到系统路径（~/.local/bin 或 /usr/local/bin）
 ./build.sh --install
 
@@ -42,6 +45,11 @@
 # 交叉编译 Linux 架构版本（x64 & arm64）
 ./build.sh --linux
 ```
+
+> **提示**：若直接使用 `dart compile exe`，可通过 `-DAPP_VERSION=<version>` 传入版本号：
+> ```bash
+> dart compile exe -DAPP_VERSION=1.2.0 bin/gitmsgai.dart -o build/gitmsgai
+> ```
 
 ### 方式三：直接使用 Dart 运行
 ```bash

@@ -2,7 +2,10 @@ import 'dart:io';
 import 'package:args/args.dart';
 import 'package:gitmsgai/gitmsgai.dart';
 
-const String version = '1.0.0';
+const String version = String.fromEnvironment(
+  'APP_VERSION',
+  defaultValue: '1.0.0',
+);
 
 ArgParser buildParser() {
   final parser = ArgParser();
