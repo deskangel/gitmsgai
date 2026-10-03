@@ -22,7 +22,13 @@
 
 ## 📦 安装与编译
 
-### 方式一：使用自动化构建脚本（推荐）
+### 方式一：直接下载预编译二进制（推荐）
+前往 [GitHub Releases](https://github.com/deskangel/gitmsgai/releases) 页面下载适合您系统的发行包：
+- **Windows**: `gitmsgai-windows-x64.zip`（解压后将 `gitmsgai.exe` 加入系统 PATH）
+- **macOS**: `gitmsgai-macos-arm64.tar.gz`（解压并将 `gitmsgai` 放置于 `/usr/local/bin` 或 `~/.local/bin`）
+- **Linux**: `gitmsgai-linux-x64.tar.gz` 或 `gitmsgai-linux-arm64.tar.gz`
+
+### 方式二：使用自动化构建脚本
 ```bash
 # 执行完整构建（代码格式校验、静态分析、单元测试、编译为原生二进制）
 ./build.sh
@@ -37,12 +43,12 @@
 ./build.sh --linux
 ```
 
-### 方式二：直接使用 Dart 运行
+### 方式三：直接使用 Dart 运行
 ```bash
 dart run bin/gitmsgai.dart --help
 ```
 
-### 方式三：全局注册为 Dart 命令行工具
+### 方式四：全局注册为 Dart 命令行工具
 ```bash
 dart pub global activate --source path .
 ```

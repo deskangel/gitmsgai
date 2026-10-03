@@ -1,0 +1,108 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build (${{ matrix.target }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: linux-x64
+            binary_name: gitmsgai
+            archive_name: gitmsgai-linux-x64.tar.gz
+            compile_args: ""
+          - os: ubuntu-latest
+            target: linux-arm64
+            binary_name: gitmsgai
+            archive_name: gitmsgai-linux-arm64.tar.gz
+            compile_args: "--target-os=linux --target-arch=arm64"
+          - os: macos-latest
+            target: macos-arm64
+            binary_name: gitmsgai
+            archive_name: gitmsgai-macos-arm64.tar.gz
+            compile_args: ""
+          - os: windows-latest
+            target: windows-x64
+            binary_name: gitmsgai.exe
+            archive_name: gitmsgai-windows-x64.zip
+            compile_args: ""
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Dart SDK
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - name: Install dependencies
+        run: dart pub get
+
+      - name: Run static analysis & tests
+        if: matrix.target != 'linux-arm64'
+        run: |
+          dart analyze --fatal-infos
+          dart test
+
+      - name: Compile & Package (Linux / macOS)
+        if: runner.os != 'Windows'
+        run: |
+          mkdir -p dist
+          dart compile exe ${{ matrix.compile_args }} bin/gitmsgai.dart -o dist/${{ matrix.binary_name }}
+          chmod +x dist/${{ matrix.binary_name }}
+          tar -czvf ${{ matrix.archive_name }} -C dist ${{ matrix.binary_name }}
+
+      - name: Compile & Package (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist
+          dart compile exe bin/gitmsgai.dart -o dist\${{ matrix.binary_name }}
+          Compress-Archive -Path dist\${{ matrix.binary_name }} -DestinationPath ${{ matrix.archive_name }}
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.target }}
+          path: ${{ matrix.archive_name }}
+          retention-days: 1
+
+  release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
+
+      - name: Generate Checksums
+        run: |
+          cd release-assets
+          sha256sum * > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release-assets/*
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
