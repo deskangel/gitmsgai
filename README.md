@@ -22,19 +22,24 @@
 
 ## 📦 安装与编译
 
-### 方式一：直接使用 Dart 运行
+### 方式一：使用自动化构建脚本（推荐）
 ```bash
-# 在项目根目录下
-dart run bin/gitmsgai.dart --help
+# 执行完整构建（代码格式校验、静态分析、单元测试、编译为原生二进制）
+./build.sh
+
+# 编译并直接安装到系统路径（~/.local/bin 或 /usr/local/bin）
+./build.sh --install
+
+# 快速编译模式（跳过测试与代码检查）
+./build.sh --fast
+
+# 交叉编译 Linux 架构版本（x64 & arm64）
+./build.sh --linux
 ```
 
-### 方式二：编译为本地原生可执行程序（推荐）
+### 方式二：直接使用 Dart 运行
 ```bash
-# 编译为单文件原生可执行文件
-dart compile exe bin/gitmsgai.dart -o /usr/local/bin/gitmsgai
-
-# 验证安装
-gitmsgai --version
+dart run bin/gitmsgai.dart --help
 ```
 
 ### 方式三：全局注册为 Dart 命令行工具
