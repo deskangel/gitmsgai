@@ -38,15 +38,45 @@ class GenerateCommand {
     }
 
     // 3. Check staged files
-    final stagedFiles = await gitService.getStagedFiles();
+    var stagedFiles = await gitService.getStagedFiles();
     if (stagedFiles.isEmpty) {
+      final hasChanges = await gitService.hasWorkingTreeChanges();
+      if (!hasChanges) {
+        stdout.writeln(
+          Ansi.warning(
+            'No changes detected in repository (working tree clean).',
+          ),
+        );
+        return 0;
+      }
+
       stdout.writeln(Ansi.warning('No staged changes found.'));
-      stdout.writeln(
-        Ansi.dim(
-          'Use "git add <files>" to stage files before running gitmsgai.',
-        ),
+      final shouldStageAll = TerminalUi.promptConfirm(
+        prompt: 'Do you want to stage all files now? (git add -A)',
+        defaultValue: true,
       );
-      return 0;
+
+      if (!shouldStageAll) {
+        stdout.writeln(
+          Ansi.dim(
+            'Use "git add <files>" to stage files before running gitmsgai.',
+          ),
+        );
+        return 0;
+      }
+
+      final addResult = await gitService.stageAll();
+      if (addResult.exitCode != 0) {
+        stderr.writeln(Ansi.error('Failed to stage files:'));
+        stderr.writeln(addResult.stderr.toString());
+        return addResult.exitCode;
+      }
+
+      stagedFiles = await gitService.getStagedFiles();
+      if (stagedFiles.isEmpty) {
+        stdout.writeln(Ansi.warning('No changes found to stage.'));
+        return 0;
+      }
     }
 
     // 4. Fetch diff

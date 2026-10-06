@@ -109,6 +109,17 @@ class GitService {
     return buffer.toString();
   }
 
+  /// Checks whether there are any changes (staged, unstaged, or untracked) in the repository.
+  Future<bool> hasWorkingTreeChanges() async {
+    final res = await _run(['status', '--porcelain']);
+    return res.exitCode == 0 && res.stdout.toString().trim().isNotEmpty;
+  }
+
+  /// Stages all changes across the repository (`git add -A`).
+  Future<ProcessResult> stageAll() async {
+    return _run(['add', '-A']);
+  }
+
   /// Executes git commit with given message.
   Future<ProcessResult> commit(String message, {bool amend = false}) async {
     final args = ['commit', '-m', message];

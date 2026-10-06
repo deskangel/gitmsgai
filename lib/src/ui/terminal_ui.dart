@@ -107,6 +107,38 @@ class TerminalUi {
     }
   }
 
+  /// Prompts the user with a yes/no question.
+  /// Returns `true` if yes, `false` if no.
+  static bool promptConfirm({
+    required String prompt,
+    bool defaultValue = true,
+  }) {
+    if (!stdin.hasTerminal) {
+      return false;
+    }
+
+    final options = defaultValue
+        ? '[${Ansi.bold('Y')}/n]'
+        : '[y/${Ansi.bold('N')}]';
+
+    while (true) {
+      stdout.write('$prompt $options: ');
+      final input = stdin.readLineSync()?.trim().toLowerCase();
+
+      if (input == null || input.isEmpty) {
+        return defaultValue;
+      }
+      if (input == 'y' || input == 'yes') {
+        return true;
+      }
+      if (input == 'n' || input == 'no') {
+        return false;
+      }
+
+      print(Ansi.yellow('Invalid option. Please enter y or n.\n'));
+    }
+  }
+
   /// Prompts user to edit the message interactively.
   static String promptEditMessage(String current) {
     print(Ansi.dim('Current message: $current'));

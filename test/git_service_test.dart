@@ -43,5 +43,10 @@ void main() {
       final isRepo = await gitService.isInsideGitRepo();
       expect(isRepo, isTrue);
     });
+
+    test('hasWorkingTreeChanges returns a boolean in git workspace', () async {
+      final hasChanges = await gitService.hasWorkingTreeChanges();
+      expect(hasChanges, isA<bool>());
+    });
   });
 }
